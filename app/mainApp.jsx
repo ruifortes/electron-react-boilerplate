@@ -11,4 +11,4 @@ window.location.hash = '/'
 router.run(function (Handler) {
   dd('router.run', Handler)
   React.render(<Handler />, document.getElementById('react-root'))
-});
+})

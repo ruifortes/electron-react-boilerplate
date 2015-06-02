@@ -10,10 +10,8 @@ var loadersByExtension = require('./lib/loaders-by-extension')
 module.exports = function(opts) {
 
   var entry = {
-    main: opts.prerender ? './app/mainApp' : './app/mainApp'
+    main: './app/mainApp'
   }
-
-
 
   var loaders = {
     'jsx': opts.hotComponents ? [ 'react-hot-loader', 'babel-loader?stage=0' ] : 'babel-loader?stage=0',
@@ -68,7 +66,7 @@ module.exports = function(opts) {
 
 
   var output = {
-    path: __dirname + '/dist/',
+    path: path.join(__dirname, 'dist'),
     filename: 'bundle.js',
     publicPath: 'http://localhost:2992/',
     contentBase: __dirname + '/public/',
@@ -85,26 +83,12 @@ module.exports = function(opts) {
     new webpack.PrefetchPlugin('react/lib/ReactComponentBrowserEnvironment')
   ]
 
-  if (opts.prerender) {
-    plugins.push(new StatsPlugin(path.join(__dirname, 'dist', 'stats.prerender.json'), {
-      chunkModules: true,
-      exclude: excludeFromStats
-    }));
-    aliasLoader['react-proxy$'] = 'react-proxy/unavailable';
-    aliasLoader['react-proxy-loader$'] = 'react-proxy-loader/unavailable';
-    externals.push(
-      /^react(\/.*)?$/,
-      /^reflux(\/.*)?$/,
-      'superagent',
-      'async'
-    );
-    plugins.push(new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }));
-  } else {
-    plugins.push(new StatsPlugin(path.join(__dirname, 'dist', 'stats.json'), {
-      chunkModules: true,
-      exclude: excludeFromStats
-    }));
-  }
+
+  plugins.push(new StatsPlugin(path.join(__dirname, 'dist', 'stats.json'), {
+    chunkModules: true,
+    exclude: excludeFromStats
+  }));
+
 
   if (opts.commonsChunk) {
     plugins.push(new webpack.optimize.CommonsChunkPlugin('commons', 'commons.js' + (opts.longTermCaching && !opts.prerender ? '?[chunkhash]' : '')))
@@ -114,7 +98,7 @@ module.exports = function(opts) {
     test: require('./app/routes/async').map(function(name) {
       return path.join(__dirname, 'app', 'routes', name);
     }),
-    loader: opts.prerender ? 'react-proxy-loader/unavailable' : 'react-proxy-loader'
+    loader: 'react-proxy-loader'
   }
 
   Object.keys(stylesheetLoaders).forEach(function(ext) {
@@ -129,11 +113,11 @@ module.exports = function(opts) {
     }
   })
 
-  if (opts.separateStylesheet && !opts.prerender) {
+  if (opts.separateStylesheet) {
     plugins.push(new ExtractTextPlugin('[name].css' + (opts.longTermCaching ? '?[contenthash]' : '')));
   }
 
-  if (opts.minimize && !opts.prerender) {
+  if (opts.minimize) {
     plugins.push(
       new webpack.optimize.UglifyJsPlugin({
         compressor: {
@@ -142,9 +126,7 @@ module.exports = function(opts) {
       }),
       new webpack.optimize.DedupePlugin()
     )
-  }
 
-  if (opts.minimize) {
     plugins.push(
       new webpack.DefinePlugin({
         'process.env': {
